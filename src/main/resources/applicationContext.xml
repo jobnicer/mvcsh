@@ -1,0 +1,120 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:aop="http://www.springframework.org/schema/aop"
+	xmlns:context="http://www.springframework.org/schema/context" xmlns:tx="http://www.springframework.org/schema/tx"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans          
+	http://www.springframework.org/schema/beans/spring-beans.xsd 
+    http://www.springframework.org/schema/context      
+    http://www.springframework.org/schema/context/spring-context.xsd
+    http://www.springframework.org/schema/tx 
+    http://www.springframework.org/schema/tx/spring-tx.xsd
+    http://www.springframework.org/schema/aop 
+    http://www.springframework.org/schema/aop/spring-aop.xsd"
+	default-lazy-init="true">
+	
+	<!-- 添加对Annotation(注释)的支持 -->
+	<context:annotation-config />
+
+	<!-- 配置注释(@Repository,@Service,@Controller,@Autowired,@Scope)扫描该包下的所有Bean-->
+	<context:component-scan base-package="org.ssh" />
+
+    <!-- 添加对@Transactional这个注解的支持，这是基于注解的方式使用事务配置声明，这样在具体应用中可以指定对哪些方法使用事务-->
+    <tx:annotation-driven transaction-manager="transactionManager" />      
+	
+	<!-- 配置dataSource 使用C3P0数据源实现-->
+	<!-- 设置连接数据库的驱动、URL、用户名、密码、连接池最大连接数、最小连接数、初始连接数等参数 -->
+	<bean id="dataSource" class="com.mchange.v2.c3p0.ComboPooledDataSource" destroy-method="close">
+	    <property name="driverClass" value="oracle.jdbc.driver.OracleDriver" />
+		<property name="jdbcUrl" value="jdbc:oracle:thin:@192.168.25.131:1521:amdb" />
+		<property name="user" value="test" />
+		<property name="password" value="caecaodb" />
+		<!-- 初始化时获取三个连接，取值应在minPoolSize与maxPoolSize之间。Default: 3 -->
+		<property name="initialPoolSize" value="3" />
+		<!-- 连接池中保留的最小连接数-->
+		<property name="minPoolSize" value="3" />
+		<!-- 连接池中保留的最大连接数。Default: 15 -->
+		<property name="maxPoolSize" value="15" />
+		<!-- 最大空闲时间,1800秒内未使用则连接被丢弃。若为0则永不丢弃。Default: 0 -->
+		<property name="maxIdleTime" value="1800" />
+		<!-- JDBC的标准参数，用以控制数据源内加载的PreparedStatements数量。但由于预缓存的statements
+                      属于单个connection而不是整个连接池。所以设置这个参数需要考虑到多方面的因素。
+                      如果maxStatements与maxStatementsPerConnection均为0，则缓存被关闭。Default: 0-->
+		<property name="maxStatements" value="100" />
+		<!-- 当连接池中的连接耗尽的时候c3p0一次同时获取的连接数。 Default: 3 -->
+		<property name="acquireIncrement" value="3" />
+	</bean>
+
+	<!-- 配置SessionFactory，依赖注入数据源，据说这个packagesToScan不能扫描子包 -->
+	<bean id="sessionFactory"
+		class="org.springframework.orm.hibernate4.LocalSessionFactoryBean">
+		<property name="dataSource">
+			<ref local="dataSource" />
+		</property>
+		<property name="hibernateProperties">
+			<props>
+			    <!-- 定义Hibernate的SessionFactory的属性 -->
+			    
+			    <!-- 允许Hibernate针对特定的关系数据库生成优化的SQL -->
+				<prop key="hibernate.dialect">org.hibernate.dialect.OracleDialect</prop>
+				<!-- 输出所有SQL语句到控制台 -->
+				<prop key="hibernate.show_sql">true</prop>
+				<!-- 是否在SQL中生成有助于调试的注释信息, 默认值为false -->
+				<prop key="hibernate.use_sql_comments">false</prop>
+				<!-- 是否输出格式化的sql语句 -->
+				<prop key="hibernate.format_sql">true</prop>
+				<prop key="hibernate.autoReconnect">true</prop>
+				 <!-- 非零值，指定JDBC抓取数量的大小 (调用Statement.setFetchSize()) -->
+				<prop key="hibernate.jdbc.fetch_size">${hibernate.jdbc.fetch_size}</prop>
+				<!-- 非零值，允许Hibernate使用JDBC2的批量更新. 取值 建议取5到30之间的值  -->
+				<prop key="hibernate.jdbc.batch_size">${hibernate.jdbc.batch_size}</prop>
+				<!-- 为Hibernate关联的批量抓取设置默认数量. 取值 建议的取值为4, 8, 和16  -->
+				<prop key="hibernate.default_batch_fetch_size">${hibernate.default_batch_fetch_size}</prop>
+			</props>
+		</property>
+		<!-- 指定映射的文件路径
+		<property name="mappingDirectoryLocations">
+			<list>
+				<value>classpath:/org/yinjie/ssh/model/</value>
+			</list>
+		</property> -->
+		<!-- 指定classpath下具体映射文件名  -->
+		<property name="mappingResources">
+			<list>
+				<value>org/ssh/web/entity/FunctionGroup.hbm.xml</value>
+				<value>org/ssh/web/entity/Functions.hbm.xml</value>
+				<value>org/ssh/web/entity/Staff.hbm.xml</value>
+				<value>org/ssh/web/entity/User.hbm.xml</value>
+				<value>org/ssh/web/entity/UserGroup.hbm.xml</value>
+				<value>org/ssh/web/entity/UserGroupFunctions.hbm.xml</value>
+			</list>
+		</property>
+	</bean>
+	
+	<!-- 配置Hibernate的局部事务管理器，使用HibernateTransactionManager类 -->
+	<!-- 该类实现PlatformTransactionManager接口，是针对Hibernate的特定实现-->
+	<!-- 并注入SessionFactory的引用 -->
+	<bean id="transactionManager"
+		class="org.springframework.orm.hibernate4.HibernateTransactionManager">
+		<property name="sessionFactory">
+			<ref local="sessionFactory" />
+		</property>
+	</bean>
+	
+	<!-- 事务管理配置 -->
+	<tx:advice id="txAdvice" transaction-manager="transactionManager">
+		<tx:attributes>
+			<tx:method name="*" />
+		</tx:attributes>
+	</tx:advice>
+	
+	<!-- 事务控制在业务层切面 -->
+	<aop:config>
+		<aop:advisor
+			pointcut="execution(*.common.dao.impl.BaseDaoImpl.*(..))"
+			advice-ref="txAdvice" />
+	</aop:config>
+	
+	<!-- 手动获取SpringContext的方法 -->
+	<bean id="springContext" class="org.ssh.utils.SpringContext"></bean>
+	
+</beans>

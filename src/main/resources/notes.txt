@@ -1,0 +1,78 @@
+1. @Autowired与@Resource
+   (1)@Autowired 与@Resource都可以用来装配bean. 都可以写在字段上,或写在setter方法上;
+   (2)@Autowired 默认按类型装配，默认情况下必须要求依赖对象必须存在，如果要允许null值，可以设
+         置它的required属性为false;如：@Autowired(required=false) .
+         如果我们想使用名称装配可以结合 @Qualifier注解进行使用;如： @Autowired(required=false)@Qualifier("loginService") 
+   (3)@Resource（这个注解属于J2EE的），默认安装名称进行装配，名称可以通过name属性进行指定，如果没
+        有指定name属性，当注解写在字段上时，默认取字段名进行安装名称查找，如果注解写在setter方法上默认取属
+        性名进行装配。当找不到与名称匹配的bean时才按照类型进行装 配。但是需要注意的是，如果name属性一旦指
+         定，就只会按照名称进行装配。
+    
+         
+2. Spring对hibernate配置文件hibernate.cfg.xml的集成，来取代hibernate.cfg.xml的配置
+   (1)继续使用Hibernate的映射文件*.hbm.xml
+   Spring集成Hibernate时去掉了Hibernate.cfg.xml，此时如果还继续使用Hibernate的映射文件*.hbm.xml的话，
+        在配置Hibernate的SessionFactory时就要配置以何种方式寻找Hibernate映射文件*.hbm.xml
+        此时spring中配置SessionFactory bean时它对应的class应为org.springframework.orm.hibernate.LocalSessionFactoryBean
+        例如：
+   <bean id="sessionFactory" class="org.springframework.orm.hibernate.LocalSessionFactoryBean">
+        <property name="dataSource" ref="dataSource" /><!-- 引用数据源 -->
+        <property name="mappingDirectoryLocations">
+            <list>
+                <value>classpath:com/cn/nos/services/pojo/</value><!-- 加载hibernate的映射文件*.hbm.xml -->
+            </list>
+        </property>
+        <property name="hibernateProperties">
+            <props>
+                <prop key="hibernate.dialect">org.hibernate.dialect.SQLServerDialect</prop>
+                <prop key="hibernate.show_sql">true</prop>
+                <prop key="hibernate.format_sql">true</prop>
+                <!--<prop key="hibernate.current_session_context_class">thread</prop>-->
+            </props>
+        </property>
+    </bean>
+    LocalSessionFactoryBean有好几个属性用来查找hibernate映射文件：
+    
+    mappingResources 指定classpath下具体映射文件名 
+    
+    mappingLocations 可以指定任何文件路径文件名，并且可以指定前缀：classpath、file等,
+    <property name="mappingLocations">    
+    <value>/WEB-INF/petclinic.hbm.xml </value>    
+	</property>    
+	<property name="mappingLocations">    
+    <value>classpath:/com/company/domain/petclinic.hbm.xml </value>    
+	</property> 
+	也可以用通配符指定，'*'指定一个文件(路径)名，'**'指定多个文件(路径)名
+	<property name="mappingLocations">    
+    <value>classpath:/com/company/domainmaps/*.hbm.xml </value>    
+	</property>    
+
+    mappingDirectoryLocations 指定映射的文件路径
+    
+    mappingJarLocations 指定加载的映射文件在jar文件中
+    
+    (2)使用jpa注解形式的pojo对象，而去掉*.hbm.xml的Hibernate映射文件 时配置的方法
+    Spring集成Hibernate时去掉了Hibernate.cfg.xml，此时如果使用jpa注解形式的pojo对象，而去掉Hibernate的映射文件*.hbm.xml的话，
+          在配置Hibernate的SessionFactory时就要配置以何种方式寻找jpa注解形式的pojo映射对象
+	此时spring中配置SessionFactory bean时它对应的class应为org.springframework.orm.hibernate3.annotation.AnnotationSessionFactoryBean
+          例如：
+    <bean id="sessionFactory" class="org.springframework.orm.hibernate3.annotation.AnnotationSessionFactoryBean">
+        <property name="dataSource" ref="dataSource" /><!-- 引用数据源 -->
+        <property name="packagesToScan">
+            <list>
+                <value>com.cn.nos.services.pojo*</value><!-- 加载hibernate的jpa注解形式的实体类 -->
+            </list>
+        </property>
+        <property name="hibernateProperties">
+            <props>
+                <prop key="hibernate.dialect">org.hibernate.dialect.SQLServerDialect</prop>
+                <prop key="hibernate.show_sql">true</prop>
+                <prop key="hibernate.format_sql">true</prop>
+                <!--<prop key="hibernate.current_session_context_class">thread</prop>-->
+            </props>
+        </property>
+    </bean>
+    AnnotationSessionFactoryBean中查找jpa注解形式的pojo映射对象的属性有：annotatedClasses、packagesToScan
+    
+    
+3. 
