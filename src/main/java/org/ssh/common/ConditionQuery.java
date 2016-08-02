@@ -6,12 +6,6 @@ import org.hibernate.criterion.Criterion;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * 
- * @author Drunker
- * @version 2.2
- * @date 2012-5-23 обнГ1:35:28
- */
 public class ConditionQuery {
 
 
